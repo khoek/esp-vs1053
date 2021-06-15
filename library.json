@@ -1,0 +1,24 @@
+{
+    "name": "esp-vs1053",
+    "version": "0.1.0",
+    "description": "A library for esp-idf for controlling VS1053 audio chips and playing sound files with them.",
+    "keywords": "vs1053, audio, sound, spi, hardware, esp-idf, esp32, esp8266",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/khoek/esp-vs1053.git"
+    },
+    "authors": [
+        {
+            "name": "Keeley Hoek",
+            "email": "keeley@hoek.io",
+            "url": "https://hoek.io"
+        }
+    ],
+    "license": "MIT",
+    "homepage": "https://github.com/khoek/esp-vs1053",
+    "dependencies": {
+        "khoek/libesp": "~1.0.0"
+    },
+    "frameworks": "espidf",
+    "platforms": "espressif32"
+}
