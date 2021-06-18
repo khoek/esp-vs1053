@@ -262,7 +262,7 @@ static ALWAYS_INLINE pump_stop_reason_t pump_bytes_until_threshold(pump_state_t*
             }
 
             if (pump->bytes_read == 0) {
-                ESP_LOGI(TAG, "EOF reached, playback stopped");
+                ESP_LOGD(TAG, "EOF reached, playback stopped");
                 return PUMP_STOP_EOF;
             } else if (pump->bytes_read < 0) {
                 ESP_LOGE(TAG, "read failed: 0x%X 0x%X", pump->bytes_read, errno);
@@ -308,7 +308,7 @@ static ALWAYS_INLINE void check_codec_not_running_or_softreset(vs1053_handle_t d
 static ALWAYS_INLINE void pump_close_fd(pump_state_t* pump) {
     assert(pump->fd >= 0);
 
-    ESP_LOGI(TAG, "closing fd: %d", pump->fd);
+    ESP_LOGD(TAG, "closing fd: %d", pump->fd);
     if (close(pump->fd)) {
         ESP_LOGE(TAG, "close failed! (0x%X)", errno);
     }
@@ -323,7 +323,7 @@ static ALWAYS_INLINE void pump_close_fd_and_read_endfill(pump_state_t* pump) {
     uint8_t endFillByte = (uint8_t) vs1053_sci_read(pump->ctrl.dev, VS1053_SCI_HDAT1);
     memset(pump->buff, endFillByte, DATA_CHUNK_SIZE);
 
-    ESP_LOGI(TAG, "endFillByte=0x%02X", endFillByte);
+    ESP_LOGD(TAG, "endFillByte=0x%02X", endFillByte);
 }
 
 // DANGER: must be called holding `player->ctrl.state_mutex`!
@@ -360,8 +360,8 @@ static void player_loop(vs1053_player_t* player) {
     SemaphoreHandle_t should_stop = NULL;
     xEventGroupSetBits(pump.ctrl.public_status, PSTATUS_IS_WAITING);
 
-    ESP_LOGI(TAG, "loop starting");
-    ESP_LOGI(TAG, "-> PSTEP_WAITING");
+    ESP_LOGD(TAG, "loop starting");
+    ESP_LOGD(TAG, "-> PSTEP_WAITING");
 
     while (1) {
         switch (step) {
@@ -566,7 +566,7 @@ static void player_loop(vs1053_player_t* player) {
         step = PSTEP_PLAYING;
         xEventGroupClearBits(pump.ctrl.public_status, PSTATUS_IS_WAITING);
         xEventGroupSetBits(pump.ctrl.public_status, PSTATUS_IS_PLAYING);
-        ESP_LOGI(TAG, "-> PSTEP_PLAYING");
+        ESP_LOGD(TAG, "-> PSTEP_PLAYING");
         continue;
     }
 
@@ -576,7 +576,7 @@ static void player_loop(vs1053_player_t* player) {
         check_codec_not_running_or_softreset(pump.ctrl.dev);
         step = PSTEP_WAITING;
         xEventGroupSetBits(pump.ctrl.public_status, PSTATUS_IS_WAITING);
-        ESP_LOGI(TAG, "-> PSTEP_WAITING");
+        ESP_LOGD(TAG, "-> PSTEP_WAITING");
         continue;
     }
 
@@ -586,7 +586,7 @@ static void player_loop(vs1053_player_t* player) {
         pump_close_fd_and_read_endfill(&pump);
         step = PSTEP_FINISHING_EOF;
         xEventGroupClearBits(pump.ctrl.public_status, PSTATUS_IS_PLAYING);
-        ESP_LOGI(TAG, "-> PSTEP_FINISHING_EOF");
+        ESP_LOGD(TAG, "-> PSTEP_FINISHING_EOF");
         continue;
     }
 
@@ -595,7 +595,7 @@ static void player_loop(vs1053_player_t* player) {
         // `pump.fd` and read `endFillByte` into `buff`.
         pump_close_fd_and_read_endfill(&pump);
         step = PSTEP_FINISHING_CANCEL;
-        ESP_LOGI(TAG, "-> PSTEP_FINISHING_CANCEL");
+        ESP_LOGD(TAG, "-> PSTEP_FINISHING_CANCEL");
         continue;
     }
 
@@ -605,7 +605,7 @@ static void player_loop(vs1053_player_t* player) {
         // As per the datasheet, keep sending bytes and polling the cancel bit.
         step = PSTEP_PENDING_CANCEL_ACK;
         xEventGroupClearBits(pump.ctrl.public_status, PSTATUS_IS_PLAYING);
-        ESP_LOGI(TAG, "-> PSTEP_PENDING_CANCEL_ACK");
+        ESP_LOGD(TAG, "-> PSTEP_PENDING_CANCEL_ACK");
         continue;
     }
     }
@@ -613,7 +613,7 @@ static void player_loop(vs1053_player_t* player) {
     abort();
 
 player_loop_stop : {
-    ESP_LOGI(TAG, "loop stopping");
+    ESP_LOGD(TAG, "loop stopping");
     xSemaphoreGive(should_stop);
 
     assert(pump.fd == PLAYER_FD_CANCEL);
@@ -646,7 +646,7 @@ player_loop_unrecoverable_error : {
 static void player_task(void* arg) {
     vs1053_player_t* player = arg;
 
-    ESP_LOGI(TAG, "task started");
+    ESP_LOGD(TAG, "player task started");
 
     gpio_num_t pin_dreq = player->ctrl.pin_dreq;
 
@@ -663,7 +663,7 @@ static void player_task(void* arg) {
     // from hanging up the core when we enable interrupts.
     gpio_intr_disable(pin_dreq);
 
-    // TODO Install in a way which doesn't collide with other code
+    // TODO Install in a way which doesn't collide with other code.
     // (Note that we need `gpio_install_isr_service()` to have been
     // called without the flag which requires IRAM ISRs.)
     gpio_install_isr_service(0);
@@ -686,7 +686,7 @@ static void player_task(void* arg) {
         ESP_LOGE(TAG, "stack overflow detected!");
     }
 
-    ESP_LOGI(TAG, "stack words remaining: %u", stack_remaining);
+    ESP_LOGD(TAG, "stack words remaining: %u", stack_remaining);
 
     io_conf.intr_type = GPIO_INTR_DISABLE;
     ESP_ERROR_CHECK(gpio_config(&io_conf));
@@ -698,7 +698,7 @@ static void player_task(void* arg) {
 
     free_player(player);
 
-    ESP_LOGI(TAG, "task stopped");
+    ESP_LOGD(TAG, "player task stopped");
 
     vTaskDelete(NULL);
 }
@@ -755,7 +755,7 @@ static esp_err_t start_playing_fd_maybe_waiting(vs1053_player_t* player, int fd,
         ESP_LOGE(TAG, "read failed: 0x%X (0x%X)", bytes_read, errno);
 
         free(buff);
-        return ESP_FAIL;
+        goto start_playing_fail_close_fd;
     }
 
     // If the file begins with an (MP3) ID3v2 header, skip past it.
@@ -784,6 +784,13 @@ static esp_err_t start_playing_fd_maybe_waiting(vs1053_player_t* player, int fd,
     update_player_state_maybe_waiting(player, fd, false, wait_until_processed);
 
     return ESP_OK;
+
+start_playing_fail_close_fd:
+    if (close(fd)) {
+        ESP_LOGE(TAG, "close failed! (0x%X)", errno);
+    }
+
+    return ESP_FAIL;
 }
 
 static esp_err_t start_playing_file_maybe_waiting(vs1053_player_t* player, const char* path, bool wait_until_processed) {
@@ -797,32 +804,32 @@ static esp_err_t start_playing_file_maybe_waiting(vs1053_player_t* player, const
 }
 
 esp_err_t vs1053_player_start_playing_fd(vs1053_player_t* player, int fd) {
-    ESP_LOGI(TAG, "playing fd: %d", fd);
+    ESP_LOGD(TAG, "playing fd: %d", fd);
     return start_playing_fd_maybe_waiting(player, fd, true);
 }
 
 esp_err_t vs1053_player_start_playing_fd_nowait(vs1053_player_t* player, int fd) {
-    ESP_LOGI(TAG, "playing fd (nowait): %d", fd);
+    ESP_LOGD(TAG, "playing fd (nowait): %d", fd);
     return start_playing_fd_maybe_waiting(player, fd, false);
 }
 
 esp_err_t vs1053_player_start_playing_file(vs1053_player_t* player, const char* path) {
-    ESP_LOGI(TAG, "playing: %s", path);
+    ESP_LOGD(TAG, "playing: %s", path);
     return start_playing_file_maybe_waiting(player, path, true);
 }
 
 esp_err_t vs1053_player_start_playing_file_nowait(vs1053_player_t* player, const char* path) {
-    ESP_LOGI(TAG, "playing (nowait): %s", path);
+    ESP_LOGD(TAG, "playing (nowait): %s", path);
     return start_playing_file_maybe_waiting(player, path, false);
 }
 
 void vs1053_player_cancel(vs1053_player_t* player) {
-    ESP_LOGI(TAG, "cancel");
+    ESP_LOGD(TAG, "cancel playing");
     update_player_state_maybe_waiting(player, PLAYER_FD_CANCEL, false, true);
 }
 
 void vs1053_player_cancel_nowait(vs1053_player_t* player) {
-    ESP_LOGI(TAG, "cancel");
+    ESP_LOGD(TAG, "cancel playing (nowait)");
     update_player_state_maybe_waiting(player, PLAYER_FD_CANCEL, false, false);
 }
 
@@ -874,14 +881,14 @@ esp_err_t vs1053_player_create(vs1053_handle_t dev, vs1053_player_handle_t* out_
         return ESP_FAIL;
     }
 
-    ESP_LOGI(TAG, "created player: %p", player);
+    ESP_LOGD(TAG, "created player: %p", player);
 
     *out_player = player;
     return ESP_OK;
 }
 
 void vs1053_player_destroy(vs1053_player_handle_t player) {
-    ESP_LOGI(TAG, "destroying player: %p", player);
+    ESP_LOGD(TAG, "destroying player: %p", player);
 
     // Because the player task keeps a pointer to itself, at this point all we need to do is
     // to signal to the player task to stop, and wait for that to be acknowledged. (When the

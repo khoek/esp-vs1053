@@ -1,5 +1,5 @@
-#ifndef VS1053_PRIVATE_H
-#define VS1053_PRIVATE_H
+#ifndef __LIB__VS1053_PRIVATE_H
+#define __LIB__VS1053_PRIVATE_H
 
 #include <driver/gpio.h>
 #include <driver/spi_master.h>
