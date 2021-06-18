@@ -1,6 +1,6 @@
 {
     "name": "esp-vs1053",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "description": "A library built on esp-idf for controlling VS1053 audio chips and playing sound files with them.",
     "keywords": "vs1053, audio, sound, spi, hardware, esp-idf, esp32, esp8266",
     "repository": {
