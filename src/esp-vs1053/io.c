@@ -25,7 +25,7 @@ void vs1053_init(spi_host_device_t host, gpio_num_t pin_cs, gpio_num_t pin_dcs, 
         .input_delay_ns = 0,
     };
 
-    vs1053_handle_t dev = malloc(sizeof(vs1053_handle_t));
+    vs1053_handle_t dev = malloc(sizeof(vs1053_t));
     dev->pin_dreq = pin_dreq;
     ESP_ERROR_CHECK(spi_bus_add_device(host, &devcfg_ctrl, &dev->spi_ctrl));
     ESP_ERROR_CHECK(spi_bus_add_device(host, &devcfg_data, &dev->spi_data));
