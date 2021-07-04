@@ -859,10 +859,8 @@ bool vs1053_player_is_waiting(vs1053_player_t* player) {
 }
 
 esp_err_t vs1053_player_create(vs1053_handle_t dev, vs1053_player_handle_t* out_player) {
-    esp_err_t ret;
-
     // Reset and configure the VS1053, setting clock speed, etc.
-    ret = vs1053_reconfigure_to_defaults(dev);
+    esp_err_t ret = vs1053_reconfigure_to_defaults(dev);
     if (ret != ESP_OK) {
         return ret;
     }
