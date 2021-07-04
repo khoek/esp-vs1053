@@ -203,7 +203,8 @@ static void isr_dreq(void* arg) {
 }
 
 static ALWAYS_INLINE void sleep_until_dreq_high(const player_ctrl_t* ctrl) {
-    assert(uxSemaphoreGetCount(ctrl->dreq_sem) == 0);
+    // Clear a potential spurious message from the DREQ ISR.
+    xSemaphoreTake(ctrl->dreq_sem, 0);
 
     // If we are here, DREQ is low. First, enable the DREQ ISR. Since the ISR disables
     // itself before it is possible to take `player->dreq_sem`, a race condition cannot
@@ -371,9 +372,6 @@ static void player_loop(vs1053_player_t* player) {
                 // Verify that the counters have been reset.
                 assert(!pending_bytes_sent);
                 assert(!finishing_end_fill_bytes_sent);
-
-                // Clear a potential spurious message from the DREQ ISR.
-                xSemaphoreTake(pump.ctrl.dreq_sem, 0);
 
                 while (xSemaphoreTake(pump.ctrl.state_mutex, portMAX_DELAY) == pdFALSE)
                     ;
