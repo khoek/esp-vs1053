@@ -33,8 +33,6 @@
 #define ID3v2_HEADER_BYTES 10
 const uint8_t ID3v2_MAGIC[] = {'I', 'D', '3'};
 
-#define ALWAYS_INLINE __attribute__((always_inline)) inline
-
 // Implements a state machine as per Section 10.5 of the datasheet of the VS1053.
 //
 // These states are usually traversed sequentially from one to the next in order,
@@ -202,7 +200,7 @@ static void isr_dreq(void* arg) {
     xSemaphoreGiveFromISR(player->ctrl.dreq_sem, NULL);
 }
 
-static ALWAYS_INLINE void sleep_until_dreq_high(const player_ctrl_t* ctrl) {
+static __always_inline void sleep_until_dreq_high(const player_ctrl_t* ctrl) {
     // Clear a potential spurious message from the DREQ ISR.
     xSemaphoreTake(ctrl->dreq_sem, 0);
 
@@ -251,7 +249,7 @@ typedef enum pump_stop_reason {
 
 // If `chunk_iters` is negative, then there is no chunk limit---we only return on some sort of failure
 // (even benign, such as EOF), or (more likely) if DREQ is low.
-static ALWAYS_INLINE pump_stop_reason_t pump_bytes_until_threshold(pump_state_t* pump, int32_t chunk_iters, ssize_t* out_inc_bytes_transmitted, ssize_t bytes_transmitted_threshold) {
+static __always_inline pump_stop_reason_t pump_bytes_until_threshold(pump_state_t* pump, int32_t chunk_iters, ssize_t* out_inc_bytes_transmitted, ssize_t bytes_transmitted_threshold) {
     for (int32_t i = 0; chunk_iters < 0 || i < chunk_iters; i++) {
         if (!pump->bytes_read) {
             if (pump->fd < 0) {
@@ -292,11 +290,11 @@ static ALWAYS_INLINE pump_stop_reason_t pump_bytes_until_threshold(pump_state_t*
 
 // If `chunk_iters` is negative, then there is no chunk limit---we only return on some sort of failure
 // (even benign, such as EOF), or (more likely) if DREQ is low.
-static ALWAYS_INLINE pump_stop_reason_t pump_bytes(pump_state_t* pump, int32_t chunk_iters) {
+static __always_inline pump_stop_reason_t pump_bytes(pump_state_t* pump, int32_t chunk_iters) {
     return pump_bytes_until_threshold(pump, chunk_iters, NULL, -1);
 }
 
-static ALWAYS_INLINE void check_codec_not_running_or_softreset(vs1053_handle_t dev) {
+static __always_inline void check_codec_not_running_or_softreset(vs1053_handle_t dev) {
     uint16_t hdat0 = vs1053_sci_read(dev, VS1053_SCI_HDAT0);
     uint16_t hdat1 = vs1053_sci_read(dev, VS1053_SCI_HDAT1);
 
@@ -306,7 +304,7 @@ static ALWAYS_INLINE void check_codec_not_running_or_softreset(vs1053_handle_t d
     }
 }
 
-static ALWAYS_INLINE void pump_close_fd(pump_state_t* pump) {
+static __always_inline void pump_close_fd(pump_state_t* pump) {
     assert(pump->fd >= 0);
 
     ESP_LOGD(TAG, "closing fd: %d", pump->fd);
@@ -316,7 +314,7 @@ static ALWAYS_INLINE void pump_close_fd(pump_state_t* pump) {
     pump->fd = -1;
 }
 
-static ALWAYS_INLINE void pump_close_fd_and_read_endfill(pump_state_t* pump) {
+static __always_inline void pump_close_fd_and_read_endfill(pump_state_t* pump) {
     pump_close_fd(pump);
 
     vs1053_sci_write(pump->ctrl.dev, VS1053_SCI_WRAMADDR, VS1053_WRAM_ENDFILLBYTE);
