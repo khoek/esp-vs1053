@@ -16,9 +16,9 @@
     ],
     "license": "MIT",
     "homepage": "https://github.com/khoek/esp-vs1053",
+    "frameworks": "espidf",
+    "platforms": "espressif32",
     "dependencies": {
         "khoek/libesp": "~1.0.0"
-    },
-    "frameworks": "espidf",
-    "platforms": "espressif32"
+    }
 }
